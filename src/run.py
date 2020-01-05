@@ -67,5 +67,4 @@ if __name__ == '__main__':
     destinationStopName = 'Arlington'
     print_travel(originStopName,destinationStopName)
 
-    ipdb.set_trace()
-
+    print('\nDONE')

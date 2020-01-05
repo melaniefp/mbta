@@ -11,7 +11,7 @@ DEFAULT_HOST = 'https://api-v3.mbta.com/'
 class DataRetriever:
     ''' class to retrieve data from MBTA server '''
 
-    def __init__(self, key=None, host=DEFAULT_HOST):
+    def __init__(self, key='a2945720cf954e53a9935a6803d4d7b8', host=DEFAULT_HOST):
 
         self.host = host
         self.key = key
@@ -104,8 +104,7 @@ if __name__ == '__main__':
 
     # test for basic query
 
-    apiKey = 'a2945720cf954e53a9935a6803d4d7b8'
-    dr = DataRetriever(key=apiKey)
+    dr = DataRetriever()
 
     stopId = 'place-pktrm'
     dataRoutes = dr.get_dataRoutes(stopId)

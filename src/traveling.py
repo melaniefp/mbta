@@ -111,8 +111,8 @@ if __name__ == '__main__':
 
     travelC.last_route
 
-    assert (travelA.reaches(routes[-1]) == True)
-    assert (travelA.reaches(routes[0]) == False)
+    assert (travelA.reaches([routes[-1]]) == True)
+    assert (travelA.reaches([routes[0]]) == False)
 
     extendedTravels = travelC.extend()
     extendedTravels[0].info()
@@ -120,6 +120,6 @@ if __name__ == '__main__':
     # testing of TravelCandidates class
 
     tc = TravelCandidates()
-    import pdb; pdb.set_trace()
     tc.add(travelA)
+    print('OK')
 
