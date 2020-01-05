@@ -7,11 +7,12 @@ from utils import cache
 import pdb
 
 DEFAULT_HOST = 'https://api-v3.mbta.com/'
+DEFAULT_KEY = 'a2945720cf954e53a9935a6803d4d7b8'
 
 class DataRetriever:
     ''' class to retrieve data from MBTA server '''
 
-    def __init__(self, key='a2945720cf954e53a9935a6803d4d7b8', host=DEFAULT_HOST):
+    def __init__(self, key=DEFAULT_KEY, host=DEFAULT_HOST):
 
         self.host = host
         self.key = key
@@ -68,16 +69,18 @@ class DataRetriever:
     @cache
     def get_subway_dataStops(self):
         dataRoutes = self.get_subway_dataRoutes()
+
         routeIds = [x.id for x in dataRoutes]
         dataStops = []
         for routeId in routeIds:
             dataStops += self.get_dataStops(routeId=routeId)
 
-        # remove duplicated stops TODO: clean code
+        # remove duplicated stops
         stopIds = [x.id for x in dataStops]
         uniqueStopIds = list(set(stopIds))
         selectIdxs = [stopIds.index(x) for x in uniqueStopIds]
         selectedDataStops = [dataStops[i] for i in selectIdxs]
+
         return selectedDataStops
 
 class DataStop:
