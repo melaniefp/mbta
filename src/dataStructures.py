@@ -3,14 +3,14 @@ from dataRetriever import DataStop, DataRoute
 
 from utils import cache, cached_property, memoize, Memoize
 
-def from_jsonObj(klass,jsonObj):
-    ''' from jsonObj, create object '''
-    if type(jsonObj) == list:
-        return [from_jsonObj(klass, x) for x in jsonObj]
+def from_dataObj(klass,dataObj):
+    ''' from dataObj, create object '''
+    if type(dataObj) == list:
+        return [from_dataObj(klass, x) for x in dataObj]
     else:
         obj = klass(
-            jsonObj.id,
-            jsonObj.name,
+            dataObj.id,
+            dataObj.name,
             )
         return obj
 
@@ -28,7 +28,7 @@ class Stop:
     @cached_property
     def routes(self):
         dataRoutes = dr.get_subway_dataRoutes(stopId=self.id)
-        routes = [Route.from_json(x) for x in dataRoutes]
+        routes = [Route.from_data(x) for x in dataRoutes]
         assert (len(routes) >= 1)
         return routes
 
@@ -36,14 +36,14 @@ class Stop:
     def num_routes(self): return len(self.routes)
 
     @classmethod
-    def from_json(cls,jsonStop):
-        ''' from jsonStop object, create Stop object '''
-        return from_jsonObj(cls,jsonStop)
+    def from_data(cls,dataStop):
+        ''' from dataStop object, create Stop object '''
+        return from_dataObj(cls,dataStop)
 
     @classmethod
     def get_subway_stops(cls):
-        jsonStops = dr.get_subway_dataStops()
-        stops = cls.from_json(jsonStops)
+        dataStops = dr.get_subway_dataStops()
+        stops = cls.from_data(dataStops)
         return stops
 
     @classmethod
@@ -66,8 +66,8 @@ class Route:
 
     @cached_property
     def stops(self):
-        jsonStops = dr.get_dataStops(self.id)
-        stops = [Stop.from_json(x) for x in jsonStops]
+        dataStops = dr.get_dataStops(self.id)
+        stops = [Stop.from_data(x) for x in dataStops]
         assert (len(stops) >= 1)
         return stops
 
@@ -75,14 +75,14 @@ class Route:
     def num_stops(self): return len(self.stops)
 
     @classmethod
-    def from_json(cls,jsonRoute):
-        ''' from jsonRoute object, create Route object '''
-        return from_jsonObj(cls,jsonRoute)
+    def from_data(cls,dataRoute):
+        ''' from dataRoute object, create Route object '''
+        return from_dataObj(cls,dataRoute)
 
     @classmethod
     def get_subway_routes(cls):
         dataRoutes = dr.get_subway_dataRoutes()
-        routes = cls.from_json(dataRoutes)
+        routes = cls.from_data(dataRoutes)
         return routes
 
     @classmethod
