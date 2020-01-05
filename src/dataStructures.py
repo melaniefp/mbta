@@ -105,7 +105,6 @@ class Route:
         # remove douplicated routes
         uniqueRouteNames = list(set(routeNames))
         uniqueIdxs = [routeNames.index(x) for x in uniqueRouteNames]
-        filteredRouteNames = [routeNames[i] for i in uniqueIdxs]
         filteredRoutes = [connectedRoutes[i] for i in uniqueIdxs]
 
         return filteredRoutes

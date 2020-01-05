@@ -66,13 +66,11 @@ class TravelCandidates:
         for travel in self.travels: allRoutes += travel.routes
 
         # TODO: fix identity problem
-        # keep only unique routes (graph nodes)
         routeNames = [x.name for x in allRoutes]
         uniqueRouteNames = list(set(routeNames))
-        uniqueIdxs = [routeNames.index(x) for x in uniqueRouteNames]
-        routeNames = [routeNames[i] for i in uniqueIdxs]
+        uniqueRoutes = [Route.storage[x] for x in uniqueRouteNames]
 
-        return [Route.storage[x] for x in routeNames]
+        return uniqueRoutes
 
     def _reached_from(self,travel): return travel.last_route.isIn(self.routes)
 
