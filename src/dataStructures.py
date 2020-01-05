@@ -1,5 +1,5 @@
-from dataRetriever import DataRetriever as dr
-from dataRetriever import JsonStop,JsonRoute
+from dataRetriever import DataRetriever
+from dataRetriever import DataStop, DataRoute
 
 from utils import cache, cached_property, memoize, Memoize
 
@@ -14,7 +14,8 @@ def from_jsonObj(klass,jsonObj):
             )
         return obj
 
-#@Memoize
+dr = DataRetriever()
+
 class Stop:
 
     storage = dict()
@@ -26,8 +27,8 @@ class Stop:
 
     @cached_property
     def routes(self):
-        jsonRoutes = dr.get_subway_jsonRoutes(stopId=self.id)
-        routes = [Route.from_json(x) for x in jsonRoutes]
+        dataRoutes = dr.get_subway_dataRoutes(stopId=self.id)
+        routes = [Route.from_json(x) for x in dataRoutes]
         assert (len(routes) >= 1)
         return routes
 
@@ -41,7 +42,7 @@ class Stop:
 
     @classmethod
     def get_subway_stops(cls):
-        jsonStops = dr.get_subway_jsonStops()
+        jsonStops = dr.get_subway_dataStops()
         stops = cls.from_json(jsonStops)
         return stops
 
@@ -65,7 +66,7 @@ class Route:
 
     @cached_property
     def stops(self):
-        jsonStops = dr.get_jsonStops(self.id)
+        jsonStops = dr.get_dataStops(self.id)
         stops = [Stop.from_json(x) for x in jsonStops]
         assert (len(stops) >= 1)
         return stops
@@ -80,8 +81,8 @@ class Route:
 
     @classmethod
     def get_subway_routes(cls):
-        jsonRoutes = dr.get_subway_jsonRoutes()
-        routes = cls.from_json(jsonRoutes)
+        dataRoutes = dr.get_subway_dataRoutes()
+        routes = cls.from_json(dataRoutes)
         return routes
 
     @classmethod

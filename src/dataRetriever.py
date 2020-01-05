@@ -1,105 +1,88 @@
 import json
 import requests
+import os
 
 from utils import cache
 
 import pdb
 
-ROUTES_API = "https://api-v3.mbta.com/routes"
-STOPS_API = "https://api-v3.mbta.com/stops"
-
-#def apiKey(func):
-#    def wrapper_add_api_key(params, *args, **kwargs):
-#        try:
-#            params.update({'api_key':'a2945720cf954e53a9935a6803d4d7b8'})
-#        except:
-#            import pdb; pdb.set_trace()
-#        func(*args,**kwargs)
-#    return wrapper_add_api_key
+DEFAULT_HOST = 'https://api-v3.mbta.com/'
 
 class DataRetriever:
     ''' class to retrieve data from MBTA server '''
 
-    # TODO: caché dictionaries to retrieve route and stop objs faster
-    # instance variables
-    routeRegister = dict()
-    stopRegister = dict()
+    def __init__(self, key=None, host=DEFAULT_HOST):
 
-    def _get_json(fromPath,params=dict()):
+        self.host = host
+        self.key = key
+        self.routes_api = os.path.join(self.host,'routes')
+        self.stops_api = os.path.join(self.host,'stops')
+
+    def _get_json(self, fromPath,params=dict()):
         ''' basic curl query to retrieve json, depends of ext API '''
         response = requests.get(fromPath,params)
         jsonResponse = response.json()
         return jsonResponse
 
-    @classmethod
-    def get_jsonRoutes(cls, stopId=None, filterType=None):
-        if stopId is None: # retrieve all
-            # TODO: Remove hard-code wiring of API_KEY
-            params = {
-                'api_key':'a2945720cf954e53a9935a6803d4d7b8',
-                    }
-        else:
+    @cache
+    def get_dataRoutes(self, stopId=None, filterType=None):
+        if stopId is None: params = {} # retrieve all
+        else: # retrieve routes per stop
             params = {
                 'filter[stop]': stopId,
                 'include': 'stop',
-                'api_key':'a2945720cf954e53a9935a6803d4d7b8',
                 }
+        if self.key is not None: params.update({'api_key': self.key})
         if filterType is not None: params['filter[type]'] = filterType
-        jsonStr = cls._get_json(ROUTES_API, params)
+        jsonStr = self._get_json(self.routes_api, params)
         try:
-            jsonRoutes = [JsonRoute(x) for x in jsonStr['data']]
+            dataRoutes = [DataRoute(x) for x in jsonStr['data']]
         except:
-            raise ValueError('could not retrieve jsonRoutes')
-        return jsonRoutes
+            raise ValueError('could not retrieve dataRoutes')
+        return dataRoutes
 
-    @classmethod
     @cache
-    def get_jsonStops(cls, routeId=None):
-        if routeId is None: # retrieve all
-            params = {
-                'api_key':'a2945720cf954e53a9935a6803d4d7b8',
-                    } # retrieve all stops
+    def get_dataStops(self, routeId=None):
+        if routeId is None: params = {}
         else:
             params = {
                 'filter[route]': routeId,
                 'include': 'route',
-                'api_key':'a2945720cf954e53a9935a6803d4d7b8',
                 }
-        jsonStr = cls._get_json(STOPS_API, params)
+        if self.key is not None: params.update({'api_key': self.key})
+        jsonStr = self._get_json(self.stops_api, params)
         # TODO: Add throw Exception if jsonStr has no data
         try:
-            jsonStops = [JsonStop(x) for x in jsonStr['data']]
+            dataStops = [DataStop(x) for x in jsonStr['data']]
         except:
-            raise ValueError('could not retrieve jsonStops')
+            raise ValueError('could not retrieve dataStops')
 
-        return jsonStops
+        return dataStops
 
-    @classmethod
     @cache
-    def get_subway_jsonRoutes(cls, stopId=None):
-        jsonRoutes = cls.get_jsonRoutes(stopId=stopId, filterType=0)
-        jsonRoutes += cls.get_jsonRoutes(stopId=stopId, filterType=1)
-        return jsonRoutes
+    def get_subway_dataRoutes(self, stopId=None):
+        dataRoutes = self.get_dataRoutes(stopId=stopId, filterType=0)
+        dataRoutes += self.get_dataRoutes(stopId=stopId, filterType=1)
+        return dataRoutes
 
-    @classmethod
     @cache
-    def get_subway_jsonStops(cls):
-        jsonRoutes = cls.get_subway_jsonRoutes()
-        routeIds = [x.id for x in jsonRoutes]
-        jsonStops = []
+    def get_subway_dataStops(self):
+        dataRoutes = self.get_subway_dataRoutes()
+        routeIds = [x.id for x in dataRoutes]
+        dataStops = []
         for routeId in routeIds:
-            jsonStops += cls.get_jsonStops(routeId=routeId)
+            dataStops += self.get_dataStops(routeId=routeId)
 
         # remove duplicated stops TODO: clean code
-        stopIds = [x.id for x in jsonStops]
+        stopIds = [x.id for x in dataStops]
         uniqueStopIds = list(set(stopIds))
         selectIdxs = [stopIds.index(x) for x in uniqueStopIds]
-        selectedJsonStops = [jsonStops[i] for i in selectIdxs]
-        return selectedJsonStops
+        selectedDataStops = [dataStops[i] for i in selectIdxs]
+        return selectedDataStops
 
-class JsonStop:
+class DataStop:
 
-    def __init__(self,jsonStop): self.json = jsonStop
+    def __init__(self,json): self.json = json
 
     @property
     def id(self): return self.json['id']
@@ -107,9 +90,9 @@ class JsonStop:
     @property
     def name(self): return self.json['attributes']['name']
 
-class JsonRoute:
+class DataRoute:
 
-    def __init__(self,jsonRoute): self.json = jsonRoute
+    def __init__(self,json): self.json = json
 
     @property
     def id(self): return self.json['id']
@@ -120,44 +103,44 @@ class JsonRoute:
 if __name__ == '__main__':
 
     # test for basic query
-    jsonRoutes = DataRetriever._get_json(ROUTES_API)
-    print(jsonRoutes['data'][0])
-    print('\n')
+
+    apiKey = 'a2945720cf954e53a9935a6803d4d7b8'
+    dr = DataRetriever(key=apiKey)
 
     stopId = 'place-pktrm'
-    jsonRoutes = DataRetriever.get_jsonRoutes(stopId)
-    print('{}: {}'.format(jsonRoutes[0].id, jsonRoutes[0].name))
+    dataRoutes = dr.get_dataRoutes(stopId)
+    print('{}: {}'.format(dataRoutes[0].id, dataRoutes[0].name))
     print('\n')
 
     routeId = 'Green-E'
-    jsonStops = DataRetriever.get_jsonStops(routeId)
-    print('{}: {}'.format(jsonStops[0].id, jsonStops[0].name))
+    dataStops = dr.get_dataStops(routeId)
+    print('{}: {}'.format(dataStops[0].id, dataStops[0].name))
     print('\n')
 
     ###
 
     stopId = 'place-pktrm'
-    jsonRoutes = DataRetriever.get_jsonRoutes(stopId, filterType=0)
-    print('{}: {}'.format(jsonRoutes[0].id, jsonRoutes[0].name))
+    dataRoutes = dr.get_dataRoutes(stopId, filterType=0)
+    print('{}: {}'.format(dataRoutes[0].id, dataRoutes[0].name))
     print('\n')
 
-    jsonRoutes = DataRetriever.get_jsonRoutes(filterType=0)
-    print('There are {} routes'.format(len(jsonRoutes)))
+    dataRoutes = dr.get_dataRoutes(filterType=0)
+    print('There are {} routes'.format(len(dataRoutes)))
     print('\n')
 
     ###
 
-    jsonRoutes = DataRetriever.get_jsonRoutes()
-    print('There are {} routes'.format(len(jsonRoutes)))
+    dataRoutes = dr.get_dataRoutes()
+    print('There are {} routes'.format(len(dataRoutes)))
     print('\n')
 
-    jsonStops = DataRetriever.get_jsonStops()
-    print('There are {} stops'.format(len(jsonStops)))
+    dataStops = dr.get_dataStops()
+    print('There are {} stops'.format(len(dataStops)))
     print('\n')
 
     ##
-    subwayRoutes = DataRetriever.get_subway_routes()
-    assert (len(subwayRoutes) == 8)
-    print('Number of subway routes: {}'.format(len(subwayRoutes)) )
+    dataRoutes = dr.get_subway_dataRoutes()
+    assert (len(dataRoutes) == 8)
+    print('Number of subway routes: {}'.format(len(dataRoutes)) )
 
     print('\nTESTS SUCCESSFUL')
