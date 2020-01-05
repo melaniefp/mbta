@@ -53,8 +53,6 @@ class Stop:
         except:
             raise ValueError('Stop object has not been stored')
 
-#@memoize
-# TODO: singleton instance class
 class Route:
 
     storage = dict()
@@ -97,15 +95,13 @@ class Route:
         ''' returns connected Routes via hub connections, except own route '''
 
         connectedRoutes = []
-        # TODO: only add unique values
         for stop in self.stops: connectedRoutes += stop.routes
-        routeNames = [x.name for x in connectedRoutes]
-        routeNames.remove(self.name)
 
-        # remove douplicated routes
-        uniqueRouteNames = list(set(routeNames))
-        uniqueIdxs = [routeNames.index(x) for x in uniqueRouteNames]
-        filteredRoutes = [connectedRoutes[i] for i in uniqueIdxs]
+        seen = set(self.name)
+        filteredRoutes = []
+        for c in connectedRoutes:
+            if c.name not in seen: filteredRoutes.append(c)
+            seen.add(c.name)
 
         return filteredRoutes
 

@@ -36,5 +36,3 @@ def get_travel(originStopName,destinationStopName):
 
     return Travel()
 
-    return travel
-

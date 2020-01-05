@@ -58,19 +58,19 @@ class TravelCandidates:
     @property
     def num_travels(self): return len(self.travels)
 
-    # TODO: this should rather be in memory, quite slow right now
     @property
     def routes(self): # nodes in graph
         ''' which routes are present in container '''
         allRoutes = []
         for travel in self.travels: allRoutes += travel.routes
 
-        # TODO: fix identity problem
-        routeNames = [x.name for x in allRoutes]
-        uniqueRouteNames = list(set(routeNames))
-        uniqueRoutes = [Route.storage[x] for x in uniqueRouteNames]
+        seen = set()
+        filteredRoutes = []
+        for c in allRoutes:
+            if c.name not in seen: filteredRoutes.append(c)
+            seen.add(c.name)
 
-        return uniqueRoutes
+        return filteredRoutes
 
     def _reached_from(self,travel): return travel.last_route.isIn(self.routes)
 
