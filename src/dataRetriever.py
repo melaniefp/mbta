@@ -20,8 +20,11 @@ class DataRetriever:
         return jsonResponse
 
     @classmethod
-    def get_jsonRoutes(cls, stopId):
-        params = {
+    def get_jsonRoutes(cls, stopId=None):
+        if stopId is None:
+            params = {} # retrieve all routes
+        else:
+            params = {
                 'filter[stop]': stopId,
                 'include': 'stop',
                 }
@@ -30,8 +33,11 @@ class DataRetriever:
         return jsonRoutes
 
     @classmethod
-    def get_jsonStops(cls, routeId):
-        params = {
+    def get_jsonStops(cls, routeId=None):
+        if routeId is None:
+            params = {} # retrieve all stops
+        else:
+            params = {
                 'filter[route]': routeId,
                 'include': 'route',
                 }
@@ -75,3 +81,10 @@ if __name__ == '__main__':
     jsonStops = DataRetriever.get_jsonStops(routeId)
     print('{}: {}'.format(jsonStops[0].id, jsonStops[0].name))
     print('\n')
+
+    jsonRoutes = DataRetriever.get_jsonRoutes()
+    print('There are {} routes'.format(len(jsonRoutes)))
+    print('\n')
+
+    jsonStops = DataRetriever.get_jsonStops()
+    print('There are {} stops'.format(len(jsonStops)))
