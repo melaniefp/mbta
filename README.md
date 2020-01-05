@@ -1,4 +1,6 @@
-This repo contains a programming exercise to handle with MBTA data.
+# MBTA Programming Exercise
+
+### This repo contains a programming exercise to handle MBTA data.
 
 * relevant source code: ./src/
 
