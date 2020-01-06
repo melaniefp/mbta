@@ -1,22 +1,20 @@
 from traveling import Travel, TravelCandidates
-from dataStructures import Stop,Route
+
+from subway import Subway
 
 MAX_TRAVEL_CANDIDATES = 100
 
-def get_travel(originStopName,destinationStopName):
+def get_travel(subway, originStop,destinationStop):
     '''
     Examples:
         1. Davis to Kendall -> Redline
         2. Ashmont to Arlington -> Redline, Greenline
     '''
 
-    originStop = Stop.get(originStopName)
-    destinationStop = Stop.get(destinationStopName)
+    originRoutes = subway.get_routes(originStop)
+    destinationRoutes = subway.get_routes(destinationStop)
 
-    originRoutes = originStop.routes
-    destinationRoutes = destinationStop.routes
-
-    travelCandidates = TravelCandidates()
+    travelCandidates = TravelCandidates(subway)
 
     initTravels = [Travel([x]) for x in originRoutes]
     for initTravel in initTravels: travelCandidates.add(initTravel)

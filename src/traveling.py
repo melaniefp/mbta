@@ -1,4 +1,4 @@
-from dataStructures import Route, Stop
+from subway import Subway
 
 MAX_TRAVEL_CANDIDATES = 100
 
@@ -13,16 +13,16 @@ class Travel(object):
     @property
     def prev_routes(self): return self.routes[:-1]
 
-    def _contains(self,route): return route.isIn(self.routes)
+    def _contains(self,route): return Subway.isIn(route, self.routes)
 
     def _copy(self):
         travel = Travel()
         travel.routes = self.routes.copy()
         return travel
 
-    def _has_loop(self): return (self.last_route.isIn(self.prev_routes) )
+    def _has_loop(self): return Subway.isIn(self.last_route, self.prev_routes)
 
-    def reaches(self,destRoutes): return (self.last_route.isIn(destRoutes))
+    def reaches(self,destRoutes): return Subway.isIn(self.last_route,destRoutes)
 
     def add(self,route):
         ''' only adds route if not already present in travel '''
@@ -30,10 +30,10 @@ class Travel(object):
 
     def info(self): return ', '.join([x.name for x in self.routes])
 
-    def extend(self):
+    def extend(self,subway):
 
         lastRoute = self.last_route
-        neighborRoutes = lastRoute.next()
+        neighborRoutes = subway.get_next_routes(lastRoute)
         isNew = [not(self._contains(x)) for x in neighborRoutes]
         routesToAdd = [x for i,x in enumerate(neighborRoutes) if isNew[i] == True]
 
@@ -52,8 +52,9 @@ class Travel(object):
 class TravelCandidates:
     ''' Container with all travel candidates '''
 
-    def __init__(self):
+    def __init__(self, subway):
         self.travels = []   # paths in graph
+        self.subway = subway
 
     @property
     def num_travels(self): return len(self.travels)
@@ -72,7 +73,8 @@ class TravelCandidates:
 
         return filteredRoutes
 
-    def _reached_from(self,travel): return travel.last_route.isIn(self.routes)
+    def _reached_from(self,travel):
+        return Subway.isIn(travel.last_route,self.routes)
 
     def _isValid(self,travel):
         ''' an invalid travel reaches a route previously visited '''
@@ -85,7 +87,7 @@ class TravelCandidates:
 
     def extend(self, travel):
         ''' extend travel candidates by expanding current travel '''
-        extendedTravels = travel.extend()
+        extendedTravels = travel.extend(self.subway)
         for i,travel in enumerate(extendedTravels):
             if self._isValid(travel): self.add(travel)
 

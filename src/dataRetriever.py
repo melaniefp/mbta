@@ -3,8 +3,7 @@ import requests
 import os
 
 from utils import cache
-
-import pdb
+from subway import Subway
 
 DEFAULT_HOST = 'https://api-v3.mbta.com/'
 DEFAULT_KEY = 'a2945720cf954e53a9935a6803d4d7b8'
@@ -20,13 +19,14 @@ class DataRetriever:
         self.stops_api = os.path.join(self.host,'stops')
 
     def _get_json(self, fromPath,params=dict()):
-        ''' basic curl query to retrieve json, depends of ext API '''
+        ''' basic HTTP query '''
         response = requests.get(fromPath,params)
         jsonResponse = response.json()
+        # TODO: handle Exceptions
         return jsonResponse
 
     @cache
-    def get_dataRoutes(self, stopId=None, filterType=None):
+    def _get_dataRoutes(self, stopId=None, filterType=None):
         if stopId is None: params = {} # retrieve all
         else: # retrieve routes per stop
             params = {
@@ -43,7 +43,7 @@ class DataRetriever:
         return dataRoutes
 
     @cache
-    def get_dataStops(self, routeId=None):
+    def _get_dataStops(self, routeId=None):
         if routeId is None: params = {}
         else:
             params = {
@@ -52,7 +52,6 @@ class DataRetriever:
                 }
         if self.key is not None: params.update({'api_key': self.key})
         jsonStr = self._get_json(self.stops_api, params)
-        # TODO: Add throw Exception if jsonStr has no data
         try:
             dataStops = [DataStop(x) for x in jsonStr['data']]
         except:
@@ -62,8 +61,8 @@ class DataRetriever:
 
     @cache
     def get_subway_dataRoutes(self, stopId=None):
-        dataRoutes = self.get_dataRoutes(stopId=stopId, filterType=0)
-        dataRoutes += self.get_dataRoutes(stopId=stopId, filterType=1)
+        dataRoutes = self._get_dataRoutes(stopId=stopId, filterType=0)
+        dataRoutes += self._get_dataRoutes(stopId=stopId, filterType=1)
         return dataRoutes
 
     @cache
@@ -71,17 +70,43 @@ class DataRetriever:
         dataRoutes = self.get_subway_dataRoutes()
 
         routeIds = [x.id for x in dataRoutes]
-        dataStops = []
+        aggregatedDataStops = []
         for routeId in routeIds:
-            dataStops += self.get_dataStops(routeId=routeId)
+            aggregatedDataStops += self._get_dataStops(routeId=routeId)
 
         # remove duplicated stops
-        stopIds = [x.id for x in dataStops]
-        uniqueStopIds = list(set(stopIds))
-        selectIdxs = [stopIds.index(x) for x in uniqueStopIds]
-        selectedDataStops = [dataStops[i] for i in selectIdxs]
+        seen = set()
+        dataStops = []
+        for stop in aggregatedDataStops:
+            if stop.name not in seen: dataStops.append(stop)
+            seen.add(stop.name)
 
-        return selectedDataStops
+        return dataStops
+
+    def get_subway(self):
+        routeList = self.get_subway_dataRoutes()
+        routes = dict()
+        for route in routeList: routes[route.id] = route
+
+        stopList = self.get_subway_dataStops()
+        stops = dict()
+        for stop in stopList: stops[stop.id] = stop
+
+        route2stops = dict()
+        for route in routeList:
+            stopIds = [x.id for x in self._get_dataStops(routeId=route.id)]
+            route2stops[route.id] = stopIds
+
+        stop2routes = dict()
+        for stop in stopList:
+            routesPerStop = self.get_subway_dataRoutes(stopId=stop.id)
+            routeIds = [x.id for x in routesPerStop]
+            stop2routes[stop.id] = routeIds
+
+        subway = Subway(routes, stops, stop2routes, route2stops)
+
+        return subway
+
 
 class DataStop:
 
@@ -108,41 +133,8 @@ if __name__ == '__main__':
     # test for basic query
 
     dr = DataRetriever()
+    subway = dr.get_subway()
 
-    stopId = 'place-pktrm'
-    dataRoutes = dr.get_dataRoutes(stopId)
-    print('{}: {}'.format(dataRoutes[0].id, dataRoutes[0].name))
-    print('\n')
-
-    routeId = 'Green-E'
-    dataStops = dr.get_dataStops(routeId)
-    print('{}: {}'.format(dataStops[0].id, dataStops[0].name))
-    print('\n')
-
-    ###
-
-    stopId = 'place-pktrm'
-    dataRoutes = dr.get_dataRoutes(stopId, filterType=0)
-    print('{}: {}'.format(dataRoutes[0].id, dataRoutes[0].name))
-    print('\n')
-
-    dataRoutes = dr.get_dataRoutes(filterType=0)
-    print('There are {} routes'.format(len(dataRoutes)))
-    print('\n')
-
-    ###
-
-    dataRoutes = dr.get_dataRoutes()
-    print('There are {} routes'.format(len(dataRoutes)))
-    print('\n')
-
-    dataStops = dr.get_dataStops()
-    print('There are {} stops'.format(len(dataStops)))
-    print('\n')
-
-    ##
-    dataRoutes = dr.get_subway_dataRoutes()
-    assert (len(dataRoutes) == 8)
-    print('Number of subway routes: {}'.format(len(dataRoutes)) )
-
-    print('\nTESTS SUCCESSFUL')
+    stops = subway.get_all_stops()
+    for stop in stops:
+        print('{}: {}'.format(stop.id,stop.name))
